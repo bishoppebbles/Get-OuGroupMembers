@@ -3,7 +3,7 @@ This script queries all the groups for a given Organizational Unit (OU) and then
 
 ## Example
 ```console
-Get-OuGroupMembers.ps1 -OuName 'ou=groups,dc=contoso,dc=com' -OutputFile MyGroupMemberships.csv
+Get-OuGroupMembers.ps1 -SearchBase 'ou=groups,dc=contoso,dc=com' -OutputFile MyGroupMemberships.csv
 ```
 ### Options
 `-Verbose` : use this option to see specific groups that fail to return their member objects
