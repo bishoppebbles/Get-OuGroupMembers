@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     This script queries all the groups for a given Organizational Unit (OU) and then recursively pulls all of the group members for each.  The output is saved in the CSV format.
 .DESCRIPTION
@@ -8,17 +8,17 @@
 .PARAMETER OutputFile
     The file name of the CSV output (default name: OuGroupMembers.csv)
 .EXAMPLE
-    Get-OuGroupMembers.ps1 -OuName 'ou=groups,dc=contoso,dc=com' -OutputFile MyGroupMemberships.csv
+    Get-OuGroupMembers.ps1 -SearchBase 'ou=groups,dc=contoso,dc=com' -OutputFile MyGroupMemberships.csv
 .NOTES
     Author: Sam Pursglove
-    Version: 1.0.1
-    Updated: 25 OCT 2018
+    Version: 1.0.2
+    Updated: 03 March 2023
 #>
 
 param (
     [Parameter(Position=0, Mandatory=$True, ValueFromPipeline=$False, HelpMessage='Enter the target OU name')]
     [String]
-    $OuName,
+    $SearchBase,
 
     [Parameter(Position=1, Mandatory=$False, ValueFromPipeline=$False, HelpMessage='The output CSV file name')]
     [String]
@@ -26,10 +26,10 @@ param (
 )
 
 # array to hold the collection of custom objects
-$OutputCollection = @()
+$OutputCollection = New-Object System.Collections.ArrayList
 
 # identify all groups within the given searchbase
-$AllOuGroups = Get-ADGroup -Filter 'name -like "*"' -SearchBase "$SearchBase"
+$AllOuGroups = Get-ADGroup -Filter * -SearchBase "$SearchBase"
 
 foreach ($group in $AllOuGroups) {
     
@@ -46,10 +46,13 @@ foreach ($group in $AllOuGroups) {
 
     # create an object for each group and user SamAccountName pair
     foreach ($member in $Members) {
-        $OuObject = New-Object -TypeName psobject
-        $OuObject | Add-Member -MemberType NoteProperty -Name GroupSamAccountName -Value $group.SamAccountName
-        $OuObject | Add-Member -MemberType NoteProperty -Name UserSamAccountName -Value $member.SamAccountName
-        $OutputCollection += $OuObject
+        if ($member.objectClass -ne 'computer') {
+            $OuObject = New-Object -TypeName psobject
+            $OuObject | Add-Member -MemberType NoteProperty -Name GroupSamAccountName -Value $group.SamAccountName
+            $OuObject | Add-Member -MemberType NoteProperty -Name UserSamAccountName -Value $member.SamAccountName
+            $OuObject | Add-Member -MemberType NoteProperty -Name UserDistinguisedName -Value $member.distinguishedName
+            $OutputCollection.Add($OuObject) | Out-Null
+        }
     }
 }
 
